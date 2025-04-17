@@ -1,68 +1,60 @@
----------------------------------------------------------------------------
--- installer.lua – мини‑казино: скачивает файлы из github.com/alexhrcn/home
----------------------------------------------------------------------------
+--------------------------------------------------------------
+-- installer.lua  •  ultra‑simple playlist downloader       --
+--------------------------------------------------------------
 
 local fs       = require("filesystem")
 local internet = require("internet")
 
--- ⚠️ Файлы лежат в КОРНЕ репозитория
-local BASE_URL = "https://raw.githubusercontent.com/alexhrcn/home/main/"
-
 local FILES = {
-  "main.lua",
-  "core.lua",
-  "config.lua",
-  "balance.lua",
-  "storage.lua",
-  "utils.lua",
-  "/gui/GUI.lua",
-  "/gui/DoubleBuffering.lua",
-  "/games/blackjack.lua",
-  "/games/roulette.lua",
+  -- корень
+  { url = "https://raw.githubusercontent.com/alexhrcn/home/main/main.lua",            path = "main.lua"         },
+  { url = "https://raw.githubusercontent.com/alexhrcn/home/main/core.lua",            path = "core.lua"         },
+  { url = "https://raw.githubusercontent.com/alexhrcn/home/main/config.lua",          path = "config.lua"       },
+  { url = "https://raw.githubusercontent.com/alexhrcn/home/main/balance.lua",         path = "balance.lua"      },
+  { url = "https://raw.githubusercontent.com/alexhrcn/home/main/storage.lua",         path = "storage.lua"      },
+  { url = "https://raw.githubusercontent.com/alexhrcn/home/main/utils.lua",           path = "utils.lua"        },
+
+  -- GUI
+  { url = "https://raw.githubusercontent.com/alexhrcn/home/main/gui/GUI.lua",          path = "gui/GUI.lua"     },
+  { url = "https://raw.githubusercontent.com/alexhrcn/home/main/gui/DoubleBuffering.lua", path = "gui/DoubleBuffering.lua" },
+
+  -- игры (заглушки)
+  { url = "https://raw.githubusercontent.com/alexhrcn/home/main/games/blackjack.lua",  path = "games/blackjack.lua"},
+  { url = "https://raw.githubusercontent.com/alexhrcn/home/main/games/roulette.lua",   path = "games/roulette.lua"},
 }
 
--- ────────── утилиты ──────────
-local function ensureDir(path)
-  if path ~= "" and not fs.isDirectory(path) then
-    if fs.exists(path) then fs.remove(path) end
-    fs.makeDirectory(path)
+----------------------------------------------------------------
+local function ensureDir(dir)
+  if dir ~= "" and not fs.isDirectory(dir) then
+    if fs.exists(dir) then fs.remove(dir) end
+    fs.makeDirectory(dir)
   end
 end
 
-local function download(url, target)
-  local handle, reason = internet.request(url)
-  if not handle then
-    io.stderr:write("HTTP‑ошибка: " .. tostring(reason) .. "\n"); return false
-  end
-  local code = ({handle:response()})[1]
-  if code ~= 200 then
-    io.stderr:write("GitHub ответил "..code.." (нет файла?)\n"); return false
-  end
-  local file, err = io.open(target, "w")
-  if not file then
-    io.stderr:write("Не могу создать "..target..": "..tostring(err).."\n"); return false
-  end
-  for chunk in handle do file:write(chunk) end
-  file:close()
-  return true
+local function download(url)
+  local handle = internet.request(url)
+  local data = ""
+  for chunk in handle do data = data .. chunk end
+  return data
 end
 
--- ────────── установка ──────────
-print("===> Установка / обновление mini‑casino")
+print("===> mini‑casino installer")
 
-ensureDir("gui")
-ensureDir("games")
-
-for _, p in ipairs(FILES) do
-  local url  = BASE_URL .. p
-  local dir  = fs.path(p) or ""
+for _, f in ipairs(FILES) do
+  local dir = fs.path(f.path) or ""
   ensureDir(dir)
-  io.write("• "..p.." … ")
-  if download(url, p) then
-    print("OK")
-  else
-    print("FAIL");  return
+
+  io.write("• "..f.path.." … ")
+  local ok, content = pcall(download, f.url)
+  if not ok or not content or content == "" then
+    print("FAIL");  print("  URL: "..f.url)
+    return
   end
+
+  local file = io.open(f.path, "w")
+  file:write(content)
+  file:close()
+  print("OK")
 end
 
-print("\n✅  Всё скачано.  Запуск:  lua main.lua")
+print("\n✅  Готово!  Запусти:  lua main.lua")

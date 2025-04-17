@@ -15,10 +15,10 @@ local FILES = {
   "balance.lua",
   "storage.lua",
   "utils.lua",
-  "gui/GUI.lua",
-  "gui/DoubleBuffering.lua",
-  "games/blackjack.lua",
-  "games/roulette.lua",
+  "/gui/GUI.lua",
+  "/gui/DoubleBuffering.lua",
+  "/games/blackjack.lua",
+  "/games/roulette.lua",
 }
 
 -- ────────── утилиты ──────────
